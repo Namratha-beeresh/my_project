@@ -1,22 +1,19 @@
 import os
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, url_for
 from pymongo import MongoClient
 from datetime import datetime
 
-# CRITICAL: This tells Flask to look "up" one level for the templates folder
 app = Flask(__name__, template_folder='../templates')
 
-# Connect to MongoDB using an Environment Variable (Security)
-# Ensure you have added "MONGO_URI" in your Vercel Dashboard Settings
+# MongoDB Connection
 MONGO_URI = os.environ.get("MONGO_URI")
 client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
-db = client.vibe_db
-collection = db.updates
+db = client.namratha_portfolio  # Updated DB name
+collection = db.activity_log
 
 @app.route('/')
 def index():
     try:
-        # Get all updates, newest first
         posts = list(collection.find().sort("_id", -1))
     except Exception as e:
         print(f"Database Error: {e}")
@@ -32,13 +29,12 @@ def add():
             collection.insert_one({
                 "skill": skill,
                 "notes": notes,
-                "date": datetime.now().strftime("%Y-%m-%d %H:%M")
+                "date": datetime.now().strftime("%b %d, %Y | %I:%M %p") # Prettier date format
             })
         except Exception as e:
             print(f"Insert Error: {e}")
             
-    return redirect('/')
+    return redirect(url_for('index'))
 
-# Required for local testing, Vercel uses the 'app' object directly
 if __name__ == "__main__":
     app.run()
